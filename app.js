@@ -97,6 +97,7 @@
 // --- IGNORE ---
 
 import express from "express";
+import cors from 'cors';
 import morgan from "morgan";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -108,6 +109,8 @@ import authRoutes from "./routes/authRoutes.js";
 import globalErrorHandler from "./controllers/errorController.js";
 
 const app = express();
+
+app.use(cors()); // Enable CORS for all routes
 
 // --- MIDDLEWARE DENGAN CCTV LENGKAP ---
 

@@ -1,49 +1,53 @@
 // server.js
-
-import app from "./app.js"; // <-- Import mesinnya
-import { config } from "dotenv";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+import http from "http";
+import { Server } from "socket.io";
 
-config(); // Jalanin dotenv
+import app from "./app.js";
 
-const port = process.env.PORT || 3000;
+dotenv.config();
 
-const dbConnect = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Koneksi ke MongoDB Atlas BERHASIL! 🚀");
-  } catch (error) {
-    console.error("Koneksi ke MongoDB GAGAL! 😭", error);
-  }
-};
+const port = process.env.PORT || 8000; // Pastiin port-nya bener
+const MONGO_URI = process.env.MONGO_URI; // Pake nama variabel lo
 
-if (process.env.NODE_ENV !== "test") {
-  dbConnect();
-}
-
-app.listen(port, () => {
-  console.log(`App dengerin di http://localhost:${port}`);
+// Bikin server HTTP gabungan
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 
+// Listener Socket.IO
+io.on("connection", (socket) => {
+  console.log("Satu client baru nyambung! ID-nya:", socket.id);
 
-// import mongoose from 'mongoose';
-// import dotenv from 'dotenv';
-// import app from './app.js';
+  socket.on("chat message", (msg) => {
+    console.log("Pesan diterima:", msg);
+    io.emit("chat message", msg); // Kirim ke SEMUA client
+  });
+  
+  socket.on("disconnect", () => {
+    console.log("Client dengan ID:", socket.id, "putus koneksi.");
+  });
+});
 
-// dotenv.config();
-
-// const port = process.env.PORT || 8000;
-// const DATABASE_URL = process.env.DATABASE_URL;
-
-// mongoose
-//   .connect(DATABASE_URL)
-//   .then(() => {
-//     console.log('Koneksi ke MongoDB Atlas BERHASIL! 🚀');
-//     app.listen(port, () => {
-//       console.log(`App dengerin di http://localhost:${port}`);
-//     });
-//   })
-//   .catch((err) => {
-//     console.error('Koneksi ke MongoDB GAGAL! 😭', err);
-//     process.exit(1);
-//   });
+// Proses:
+// 1. Sambungin dulu ke Database
+// 2. KALO BERHASIL, baru jalanin server Express + Socket.IO
+mongoose
+  .connect(MONGO_URI) // <-- Pake MONGO_URI
+  .then(() => {
+    console.log("Koneksi ke MongoDB Atlas BERHASIL! 🚀");
+    // Nyalain httpServer, BUKAN app
+    httpServer.listen(port, "0.0.0.0", () => {
+      console.log(`App (plus Socket.IO) dengerin di http://localhost:${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Koneksi ke MongoDB GAGAL! 😭", err);
+    process.exit(1);
+  });
+  
