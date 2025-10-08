@@ -14,6 +14,8 @@ const app = express();
 // --- GLOBAL MIDDLEWARE ---
 
 // 1. CORS (PALING ATAS)
+// Izinkan SEMUA pre-flight request (`OPTIONS`) dari origin manapun
+app.options("*", cors());
 app.use(cors());
 
 // 2. Keamanan Lainnya
