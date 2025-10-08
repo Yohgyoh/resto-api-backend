@@ -13,7 +13,15 @@ const app = express();
 // --- GLOBAL MIDDLEWARE ---
 
 // Baru pasang cors buat semua request lainnya
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5174",
+      "https://jakarta-cafe-frontend.onrender.com",
+    ], // tambahkan origin frontend lo
+    credentials: true, // jika pakai cookie/session
+  })
+);
 
 app.use(helmet());
 
