@@ -1,4 +1,3 @@
-// app.js (Versi Final & Bersih)
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -13,12 +12,9 @@ const app = express();
 
 // --- GLOBAL MIDDLEWARE ---
 
-// 1. CORS (PALING ATAS)
-// Izinkan SEMUA pre-flight request (`OPTIONS`) dari origin manapun
-app.options("/*", cors());
+// Baru pasang cors buat semua request lainnya
 app.use(cors());
 
-// 2. Keamanan Lainnya
 app.use(helmet());
 
 const limiter = rateLimit({
@@ -28,10 +24,8 @@ const limiter = rateLimit({
 });
 app.use("/api", limiter);
 
-// 3. Body Parser
 app.use(express.json({ limit: "10kb" }));
 
-// 4. Logger
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
@@ -50,3 +44,4 @@ app.use((req, res, next) => {
 app.use(globalErrorHandler);
 
 export default app;
+app.use(globalErrorHandler);
