@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -12,17 +11,30 @@ const app = express();
 
 // --- GLOBAL MIDDLEWARE ---
 
-// Baru pasang cors buat semua request lainnya
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5174",
-      "https://jakarta-cafe-frontend.onrender.com",
-    ], // tambahkan origin frontend lo
-    credentials: true, // jika pakai cookie/session
-  })
-);
+app.use((req, res, next) => {
+  // Izinkan semua origin.
+  res.setHeader("Access-Control-Allow-Origin", "*");
 
+  // Izinkan header yang boleh dikirim client
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+
+  // Izinkan metode HTTP yang boleh dipake
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE, OPTIONS"
+  );
+
+  // Jalur VVIP khusus buat pre-flight request (OPTIONS)
+  // Kalo ada request OPTIONS, langsung jawab 200 OK dan stop.
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
 app.use(helmet());
 
 const limiter = rateLimit({
