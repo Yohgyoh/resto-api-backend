@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -11,41 +12,29 @@ const app = express();
 
 // --- GLOBAL MIDDLEWARE ---
 
-app.use((req, res, next) => {
-  // Izinkan semua origin.
-  res.setHeader("Access-Control-Allow-Origin", "*");
+// 1. Konfigurasi CORS Super Spesifik
+const corsOptions = {
+  origin: "*", // Izinkan SEMUA origin. Nanti kalo udah punya domain frontend, bisa diganti jadi 'https://domain-frontend-lo.com'
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+app.use(cors(corsOptions));
 
-  // Izinkan header yang boleh dikirim client
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-
-  // Izinkan metode HTTP yang boleh dipake
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, DELETE, OPTIONS"
-  );
-
-  // Jalur VVIP khusus buat pre-flight request (OPTIONS)
-  // Kalo ada request OPTIONS, langsung jawab 200 OK dan stop.
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
-app.use(helmet());
+// 2. Keamanan Lainnya
+app.use(helmet()); // Set HTTP headers yang aman
 
 const limiter = rateLimit({
-  max: 100,
-  windowMs: 60 * 60 * 1000,
-  message: "Terlalu banyak request dari IP ini. Coba lagi nanti ya.",
+  max: 100, // Maksimal 100 request per 15 menit dari satu IP
+  windowMs: 15 * 60 * 1000,
+  message: "Terlalu banyak request dari IP ini, coba lagi dalam 15 menit!",
 });
-app.use("/api", limiter);
+app.use("/api", limiter); // Terapin ke semua rute yang diawali /api
 
-app.use(express.json({ limit: "10kb" }));
+// 3. Body Parser (buat ngebaca req.body dari JSON)
+app.use(express.json({ limit: "10kb" })); // Batasi ukuran body request jadi 10kb
 
+// 4. Logger (buat liat request yang masuk di terminal)
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
@@ -54,14 +43,17 @@ if (process.env.NODE_ENV === "development") {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
-// --- ERROR HANDLING ---
+// --- ERROR HANDLING (WAJIB PALING BAWAH) ---
+
+// Handler untuk rute yang gak ada (404 Not Found)
 app.use((req, res, next) => {
   res.status(404).json({
     status: "fail",
     message: `Can't find ${req.originalUrl} on this server!`,
   });
 });
+
+// "UGD" buat semua error yang terjadi di aplikasi
 app.use(globalErrorHandler);
 
 export default app;
-app.use(globalErrorHandler);
