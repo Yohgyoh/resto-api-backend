@@ -147,33 +147,58 @@
 // app.use(globalErrorHandler);
 
 // export default app;
-
 import express from "express";
-import cors from "cors";
+// HAPUS SEMUA IMPORT KEAMANAN LAIN (helmet, rate-limit, morgan, dll)
+
+import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import globalErrorHandler from "./controllers/errorController.js";
 
 const app = express();
 
-// --- CUMA PASANG CORS, GAK ADA YANG LAIN ---
-console.log("--- MEMASANG CORS ---");
-app.use(cors());
+// --- HANYA ADA DUA MIDDLEWARE INI ---
 
-// --- BIKIN SATU RUTE TES ---
-app.get("/api/test-cors", (req, res) => {
-  console.log("--- RUTE /api/test-cors BERHASIL DIAKSES ---");
-  res.status(200).json({ message: "CORS Berhasil!" });
+// 1. JURUS PAMUNGKAS CORS MANUAL
+app.use((req, res, next) => {
+  // Izinkan semua origin
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  // Izinkan header yang boleh dikirim client (termasuk Authorization)
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+
+  // Izinkan metode HTTP yang boleh dipake
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE, OPTIONS"
+  );
+
+  // Jalur VVIP khusus buat pre-flight request (OPTIONS)
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
 });
 
-// --- SEMUA RUTE LAIN DAN MIDDLEWARE LAIN KITA MATIIN DULU ---
-// JADIIN KOMEN ATAU HAPUS SEMUA DI BAWAH INI
-/*
-import morgan from 'morgan';
-import helmet from 'helmet';
-// ... import lainnya
-app.use(helmet());
-// ... middleware lainnya
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+// 2. BODY PARSER
+app.use(express.json());
+
+// --- RUTE ---
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+
+// --- ERROR HANDLING ---
+// Kita pake global error handler kita buat nangkep 404
+app.use((req, res, next) => {
+  // Bikin error 404 manual dan lempar ke UGD
+  const err = new Error(`Can't find ${req.originalUrl} on this server!`);
+  err.statusCode = 404;
+  err.status = "fail";
+  next(err);
+});
 app.use(globalErrorHandler);
-*/
 
 export default app;
