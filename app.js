@@ -54,11 +54,12 @@ app.use((req, res, next) => {
 });
 
 // 2. Keamanan Lainnya
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: false,
-  crossOriginOpenerPolicy: false,
-})); // Set HTTP headers yang aman
+// Temporarily disable helmet to fix CORS issue
+// app.use(helmet({
+//   crossOriginEmbedderPolicy: false,
+//   crossOriginResourcePolicy: false,
+//   crossOriginOpenerPolicy: false,
+// })); // Set HTTP headers yang aman
 
 // CORS headers AFTER helmet to ensure they're not overridden
 app.use((req, res, next) => {
