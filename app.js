@@ -14,12 +14,44 @@ const app = express();
 
 // 1. Konfigurasi CORS Super Spesifik
 const corsOptions = {
-  origin: "*", // Izinkan SEMUA origin. Nanti kalo udah punya domain frontend, bisa diganti jadi 'https://domain-frontend-lo.com'
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://jakarta-cafe-api-backend.onrender.com",
+    "*" // Fallback untuk development
+  ],
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Origin", 
+    "X-Requested-With", 
+    "Content-Type", 
+    "Accept", 
+    "Authorization",
+    "Cache-Control",
+    "Pragma"
+  ],
+  credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204,
 };
 app.use(cors(corsOptions));
+
+// Manual CORS headers as backup (untuk memastikan headers selalu ada)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // 2. Keamanan Lainnya
 app.use(helmet()); // Set HTTP headers yang aman
