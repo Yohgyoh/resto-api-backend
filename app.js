@@ -40,24 +40,34 @@ app.use(cors(corsOptions));
 
 // Manual CORS headers as backup (untuk memastikan headers selalu ada)
 app.use((req, res, next) => {
-  // Set CORS headers for all requests
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    res.sendStatus(200);
+  } else {
+    next();
   }
-  
-  next();
 });
 
 // 2. Keamanan Lainnya
-app.use(helmet()); // Set HTTP headers yang aman
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+})); // Set HTTP headers yang aman
+
+// CORS headers AFTER helmet to ensure they're not overridden
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
 const limiter = rateLimit({
   max: 100, // Maksimal 100 request per 15 menit dari satu IP
