@@ -102,6 +102,28 @@ app.options('/api/auth/register', (req, res) => {
   res.status(200).end();
 });
 
+// Test endpoint to verify CORS
+app.get('/api/test-cors', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  res.json({
+    message: 'CORS test endpoint',
+    headers: req.headers,
+    cors: 'working'
+  });
+});
+
+app.options('/api/test-cors', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
@@ -109,6 +131,12 @@ app.use("/api/users", userRoutes);
 
 // Handler untuk rute yang gak ada (404 Not Found)
 app.use((req, res, next) => {
+  // Force CORS headers even on 404
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
   res.status(404).json({
     status: "fail",
     message: `Can't find ${req.originalUrl} on this server!`,
