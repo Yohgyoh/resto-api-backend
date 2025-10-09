@@ -40,17 +40,20 @@ app.use(cors(corsOptions));
 
 // Manual CORS headers as backup (untuk memastikan headers selalu ada)
 app.use((req, res, next) => {
+  // Set CORS headers for all requests
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+    res.status(200).end();
+    return;
   }
+  
+  next();
 });
 
 // 2. Keamanan Lainnya
@@ -72,6 +75,22 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // --- RUTE ---
+
+// Explicitly handle OPTIONS requests for auth endpoints
+app.options('/api/auth/login', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.status(200).end();
+});
+
+app.options('/api/auth/register', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.status(200).end();
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
