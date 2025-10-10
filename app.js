@@ -148,7 +148,10 @@
 
 // export default app;
 import express from "express";
-// HAPUS SEMUA IMPORT KEAMANAN LAIN (helmet, rate-limit, morgan, dll)
+import cors from "cors";
+import morgan from "morgan";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -156,49 +159,108 @@ import globalErrorHandler from "./controllers/errorController.js";
 
 const app = express();
 
-// --- HANYA ADA DUA MIDDLEWARE INI ---
+// --- GLOBAL MIDDLEWARE ---
 
-// 1. JURUS PAMUNGKAS CORS MANUAL
-app.use((req, res, next) => {
-  // Izinkan semua origin
-  res.setHeader("Access-Control-Allow-Origin", "*");
+// 1. CORS Configuration - Comprehensive and secure
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://localhost:3001", 
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:8080",
+      "https://jakarta-cafe-api-backend.onrender.com"
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With", 
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "Cache-Control",
+    "Pragma",
+    "X-API-Key"
+  ],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
 
-  // Izinkan header yang boleh dikirim client (termasuk Authorization)
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
+app.use(cors(corsOptions));
 
-  // Izinkan metode HTTP yang boleh dipake
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, DELETE, OPTIONS"
-  );
+// 2. Security middleware
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: false,
+}));
 
-  // Jalur VVIP khusus buat pre-flight request (OPTIONS)
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
+// 3. Rate limiting
+const limiter = rateLimit({
+  max: 100, // Maximum 100 requests per 15 minutes from one IP
+  windowMs: 15 * 60 * 1000,
+  message: "Too many requests from this IP, please try again later!",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api", limiter);
 
-  next();
+// 4. Body parser
+app.use(express.json({ limit: "10kb" }));
+
+// 5. Logger
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
+
+// --- ROUTES ---
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Server is running!",
+    timestamp: new Date().toISOString(),
+    cors: "enabled"
+  });
 });
 
-// 2. BODY PARSER
-app.use(express.json());
+// Test CORS endpoint
+app.get("/api/test-cors", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "CORS test endpoint working!",
+    headers: req.headers,
+    origin: req.get('Origin'),
+    cors: "working"
+  });
+});
 
-// --- RUTE ---
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
 // --- ERROR HANDLING ---
-// Kita pake global error handler kita buat nangkep 404
+// 404 handler
 app.use((req, res, next) => {
-  // Bikin error 404 manual dan lempar ke UGD
   const err = new Error(`Can't find ${req.originalUrl} on this server!`);
   err.statusCode = 404;
   err.status = "fail";
   next(err);
 });
+
+// Global error handler
 app.use(globalErrorHandler);
 
 export default app;

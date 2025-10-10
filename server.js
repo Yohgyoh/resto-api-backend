@@ -66,14 +66,31 @@ const MONGO_URI = process.env.MONGO_URI;
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:5173", 
+      "http://localhost:5174",
+      "http://localhost:8080",
+      "https://jakarta-cafe-api-backend.onrender.com"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
   },
 });
 
 io.on("connection", (socket) => {
-  // ... listener socket lo ...
-  console.log("Satu client baru nyambung via Socket.IO!");
+  console.log("New client connected via Socket.IO! ID:", socket.id);
+
+  socket.on("chat message", (msg) => {
+    console.log("Message received:", msg);
+    io.emit("chat message", msg); // Broadcast to all clients
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected. ID:", socket.id);
+  });
 });
 
 // --- STRATEGI BARU ---
